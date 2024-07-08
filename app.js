@@ -3,11 +3,15 @@ var bodyParser = require('body-parser');
 var morgan = require('morgan');
 var mongoose = require('mongoose');
 const cors = require('cors');
+const dotenv = require('dotenv');
+
 
 var config = require('./config');
 var setupController = require('./controllers/setupController');
 var todoController = require('./controllers/todoController');
+var authController = require('./controllers/authController');
 
+dotenv.config();
 var app = express();
 app.use(cors());
 var port = process.env.PORT || 3000
@@ -25,6 +29,8 @@ console.log(config.getDbConnectionString())
 mongoose.connect(config.getDbConnectionString())
 setupController(app)
 todoController(app)
+authController(app)
+
 
 app.get("/", function(req, res){
     res.render("index");
