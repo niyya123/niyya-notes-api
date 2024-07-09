@@ -69,7 +69,9 @@ module.exports = function (app) {
                 (err, token) => {
                     if (err) throw err;
                     res.json({ "token" :token,
-                                "id": user.id,});
+                                "id": user.id,
+                                "username": user.username,
+                            "email": user.email});
                 }
             );
         } catch (err) {
