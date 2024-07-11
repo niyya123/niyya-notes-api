@@ -14,6 +14,7 @@ var config = require('./config');
 var setupController = require('./controllers/setupController');
 var todoController = require('./controllers/todoController');
 var authController = require('./controllers/authController');
+var messageController = require('./controllers/messageController');
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ var app = express();
 const server = createServer(app);
 const io = new Server(server,{
     cors:{
-        origins: ['http://localhost:4200']
+        origins: ['']
     }
 });
 app.use(cors());
@@ -41,6 +42,7 @@ mongoose.connect(config.getDbConnectionString())
 setupController(app)
 todoController(app)
 authController(app)
+messageController(app)
 
 // socket setup
 io.on('connection', (socket) => {
