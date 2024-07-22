@@ -7,8 +7,10 @@ module.exports = function (app) {
     app.get('/api/todos', auth, function (req, res, next) {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 8;
-        Todos.find().skip((page - 1) * pageSize).limit(pageSize).then(async todo => {
-            const totalItems = await Todos.countDocuments();
+        Todos.find({
+            author : req.query.author? req.query.author : {$exists: true}
+        }).skip((page - 1) * pageSize).limit(pageSize).then(async todo => {
+            const totalItems = await todo.length;
             const totalPages = Math.ceil(totalItems / pageSize);
             res.json({
                 "page": page,

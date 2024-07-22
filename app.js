@@ -15,13 +15,14 @@ var setupController = require('./controllers/setupController');
 var todoController = require('./controllers/todoController');
 var authController = require('./controllers/authController');
 var messageController = require('./controllers/messageController');
+var imageController = require('./controllers/imageController');
 
 dotenv.config();
 
 var app = express();
 const server = createServer(app);
-const io = new Server(server,{
-    cors:{
+const io = new Server(server, {
+    cors: {
         origins: ['']
     }
 });
@@ -30,7 +31,7 @@ app.use(cors());
 
 var port = process.env.PORT || 3000
 
-app.use("/assets", express.static(__dirname+ "/public"))
+app.use("/assets", express.static(__dirname + "/public"))
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("dev"))
@@ -39,10 +40,14 @@ app.set("view engine", "ejs");
 //Db info
 console.log(config.getDbConnectionString())
 mongoose.connect(config.getDbConnectionString())
+
+
+// Setup route
 setupController(app)
 todoController(app)
 authController(app)
 messageController(app)
+imageController(app)
 
 // socket setup
 io.on('connection', (socket) => {
@@ -61,10 +66,10 @@ io.on('connection', (socket) => {
     });
 });
 
-app.get("/", function(req, res){
+app.get("/", function (req, res) {
     res.render("index");
 })
 
-server.listen(port,function(){
+server.listen(port, function () {
     console.log("Server running on port", port);
 });
