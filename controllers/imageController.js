@@ -78,7 +78,7 @@ module.exports = function (app) {
             Images.find({
                 author : req.query.author? req.query.author : {$exists: true}  // Optional: filter by author
             }).skip((page - 1) * pageSize).limit(pageSize).then(async image => {
-                const totalItems = await Images.countDocuments();
+                const totalItems = await image.length;
                 const totalPages = Math.ceil(totalItems / pageSize);
                 res.json({
                     "page": page,
@@ -92,6 +92,26 @@ module.exports = function (app) {
             })
         } catch (error) {
             
+        }
+    })
+
+    //Delete Images
+    app.delete('/api/gallery/:id',auth,async (req, res) => {
+        const { id } = req.params;
+        try {
+            const image = await Images.findById(id);
+            if (!image) {
+                return res.status(404).json({ message: 'Image not found' });
+            }
+
+            const file = bucket.file(image.fileName);
+            await file.delete();
+
+            await Images.findByIdAndDelete(id);
+            res.status(200).json({ message: 'Image deleted successfully' ,code:'200'});
+        } catch (error) {
+            console.error('Error deleting image:', error);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     })
 }
