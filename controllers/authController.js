@@ -2,8 +2,18 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../api/models/userModel')
 const auth = require('../api/middlewares/auth');
+const admin = require('firebase-admin')
+const multer = require('multer');
+var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-2db716f3b7.json')
 
 module.exports = function (app) {
+
+    const bucket = admin.storage().bucket();
+    // // Multer setup
+    const storage = multer.memoryStorage();
+    const upload = multer({ storage });
+
+
     // create user
     app.post('/api/register', async function (req, res, next) {
         const { email, username, password } = req.body;
@@ -20,7 +30,7 @@ module.exports = function (app) {
             }
 
 
-            user = new User({ email ,username, password });
+            user = new User({ email ,username, password,avatarUrl:'' });
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
             await user.save();
@@ -92,4 +102,41 @@ module.exports = function (app) {
             res.status(500).send('Server error');
         }
     });
+
+    // update avatar user
+    app.patch('/api/user/avatar/:id',auth,upload.single('image'), async (req, res) => {
+        if (!req.file) {
+            return res.status(400).send('No file uploaded.');
+        }
+        const { id } = req.params;
+
+        const fileName = `${Date.now()}-${req.file.originalname}`;
+        const file = bucket.file(fileName);
+
+        const stream = file.createWriteStream({
+            metadata: {
+                contentType: req.file.mimetype,
+            },
+        });
+
+        stream.on('error', (err) => {
+            console.error(err);
+            res.status(500).send(err);
+        });
+
+        stream.on('finish', async () => {
+            await file.makePublic();
+            const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+            const update = {avatarUrl: url}
+            const user = await User.findByIdAndUpdate(id,update,{new:true})
+            if (!user) {
+                return res.status(404).send('Document not found.');
+            }
+            res.send({
+                code:200
+            });
+        });
+
+        stream.end(req.file.buffer);
+    })
 }

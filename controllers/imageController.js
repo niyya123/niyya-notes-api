@@ -1,24 +1,24 @@
 const auth = require('../api/middlewares/auth')
 var Images = require('../api/models/imageModel')
-const admin = require('firebase-admin')
 const multer = require('multer');
-var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-2db716f3b7.json')
+const { bucket } = require('../config/firebase');
+
 
 module.exports = function (app) {
     //Firebase
 
-    try {
-        admin.initializeApp({
-            credential: admin.credential.cert(key),
-            storageBucket: "niyya-notes.appspot.com" // replace with your Firebase project's storage bucket
-        });
-        console.log('Firebase Admin SDK initialized successfully');
-    } catch (error) {
-        console.error('Error initializing Firebase Admin SDK:', error);
-    }
+    // try {
+    //     admin.initializeApp({
+    //         credential: admin.credential.cert(key),
+    //         storageBucket: "niyya-notes.appspot.com" // replace with your Firebase project's storage bucket
+    //     });
+    //     console.log('Firebase Admin SDK initialized successfully');
+    // } catch (error) {
+    //     console.error('Error initializing Firebase Admin SDK:', error);
+    // }
   
 
-    const bucket = admin.storage().bucket();
+    // const bucket = admin.storage().bucket();
 
     // Multer setup
     const storage = multer.memoryStorage();
@@ -71,19 +71,21 @@ module.exports = function (app) {
     });
 
     // Get images
-    app.get('/api/gallery',auth,(req, res) => {
+    app.get('/api/gallery',auth,async (req, res) => {
         try {
             const page = parseInt(req.query.page) || 1;
             const pageSize = parseInt(req.query.pageSize) || 15;
+            const temp = await Images.countDocuments({
+                author : req.query.author? req.query.author : {$exists: true}  // Optional: filter by author
+            })
             Images.find({
                 author : req.query.author? req.query.author : {$exists: true}  // Optional: filter by author
             }).skip((page - 1) * pageSize).limit(pageSize).then(async image => {
-                const totalItems = await image.length;
-                const totalPages = Math.ceil(totalItems / pageSize);
+                const totalPages = Math.ceil(temp / pageSize);
                 res.json({
                     "page": page,
                     "pageSize": pageSize,
-                    "totalItems": totalItems,
+                    "totalItems": temp,
                     "totalPages": totalPages,
                     "images": image
                 })

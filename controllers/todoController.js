@@ -4,18 +4,20 @@ var Todos = require('../api/models/todoModel')
 module.exports = function (app) {
 
     // get Todos
-    app.get('/api/todos', auth, function (req, res, next) {
+    app.get('/api/todos', auth, async function (req, res, next) {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 8;
+        const temp = await Todos.countDocuments({
+            author : req.query.author? req.query.author : {$exists: true}  // Optional: filter by author
+        })
         Todos.find({
             author : req.query.author? req.query.author : {$exists: true}
         }).skip((page - 1) * pageSize).limit(pageSize).then(async todo => {
-            const totalItems = await todo.length;
-            const totalPages = Math.ceil(totalItems / pageSize);
+            const totalPages = Math.ceil(temp / pageSize);
             res.json({
                 "page": page,
                 "pageSize": pageSize,
-                "totalItems": totalItems,
+                "totalItems": temp,
                 "totalPages": totalPages,
                 "todos": todo
             })
