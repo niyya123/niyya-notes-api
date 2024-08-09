@@ -1,7 +1,7 @@
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-c6a0155f93.json')
+var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-25649c35e7.json')
 
 // Initialize Firebase Admin SDK
 try {

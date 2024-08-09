@@ -4,11 +4,11 @@ const User = require('../api/models/userModel')
 const auth = require('../api/middlewares/auth');
 const admin = require('firebase-admin')
 const multer = require('multer');
-var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-c6a0155f93.json')
+const { bucket } = require('../config/firebase');
+var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-25649c35e7.json')
 
 module.exports = function (app) {
 
-    const bucket = admin.storage().bucket();
     // // Multer setup
     const storage = multer.memoryStorage();
     const upload = multer({ storage });
@@ -110,33 +110,55 @@ module.exports = function (app) {
         }
         const { id } = req.params;
 
-        const fileName = `${Date.now()}-${req.file.originalname}`;
-        const file = bucket.file(fileName);
+        try {
+            const { buffer, originalname, mimetype } = req.file;
 
-        const stream = file.createWriteStream({
-            metadata: {
-                contentType: req.file.mimetype,
-            },
-        });
+            const file = bucket.file(originalname);
+            await file.save(buffer, {
+                metadata: { contentType: mimetype },
+                public: true,
+            });
 
-        stream.on('error', (err) => {
-            console.error(err);
-            res.status(500).send(err);
-        });
 
-        stream.on('finish', async () => {
             await file.makePublic();
-            const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-            const update = {avatarUrl: url}
-            const user = await User.findByIdAndUpdate(id,update,{new:true})
-            if (!user) {
-                return res.status(404).send('Document not found.');
-            }
-            res.send({
+             // Get the file URL
+             const fileUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+             const update = {avatarUrl: fileUrl}
+             const user = await User.findByIdAndUpdate(id,update,{new:true})
+             res.send({
                 code:200
             });
-        });
+        } catch (error) {
+            console.log('error: ', error);
+        }
 
-        stream.end(req.file.buffer);
+        // const fileName = `${Date.now()}-${req.file.originalname}`;
+        // const file = bucket.file(fileName);
+
+        // const stream = file.createWriteStream({
+        //     metadata: {
+        //         contentType: req.file.mimetype,
+        //     },
+        // });
+
+        // stream.on('error', (err) => {
+        //     console.error(err);
+        //     res.status(500).send(err);
+        // });
+
+        // stream.on('finish', async () => {
+        //     await file.makePublic();
+        //     const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        //     const update = {avatarUrl: url}
+        //     const user = await User.findByIdAndUpdate(id,update,{new:true})
+        //     if (!user) {
+        //         return res.status(404).send('Document not found.');
+        //     }
+        //     res.send({
+        //         code:200
+        //     });
+        // });
+
+        // stream.end(req.file.buffer);
     })
 }

@@ -4,6 +4,7 @@ const multer = require('multer');
 const { bucket } = require('../config/firebase');
 
 
+
 module.exports = function (app) {
     //Firebase
 
@@ -16,16 +17,16 @@ module.exports = function (app) {
     // } catch (error) {
     //     console.error('Error initializing Firebase Admin SDK:', error);
     // }
-  
+
 
     // const bucket = admin.storage().bucket();
 
     // Multer setup
     const storage = multer.memoryStorage();
-    const upload = multer({ storage });
+    const upload = multer({ storage: storage });
 
     // Image upload endpoint
-    app.post('/api/gallery/upload', upload.single('image'), (req, res) => {
+    app.post('/api/gallery/upload', upload.single('image'), async (req, res) => {
         if (!req.file) {
             return res.status(400).send('No file uploaded.');
         }
@@ -36,50 +37,43 @@ module.exports = function (app) {
             return res.status(400).send('Author is required.');
         }
 
+        try {
+            const { buffer, originalname, mimetype } = req.file;
 
-        const fileName = `${Date.now()}-${req.file.originalname}`;
-        const file = bucket.file(fileName);
+            // Upload file to Firebase Storage
+            const file = bucket.file(originalname);
+            await file.save(buffer, {
+                metadata: { contentType: mimetype },
+                public: true,
+            });
 
-        const stream = file.createWriteStream({
-            metadata: {
-                contentType: req.file.mimetype,
-            },
-        });
+             // Get the file URL
+            const fileUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
 
-        stream.on('error', (err) => {
-            console.error(err);
-            res.status(500).send(err);
-        });
+            const newImage = new Images({ fileName: req.file.originalname, originalName: req.file.originalname, url : fileUrl, author : author});
+            await newImage.save();
 
-        stream.on('finish', async () => {
-            await file.makePublic();
-            const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-
-            const newImage = new Images({ fileName, originalName: req.file.originalname, url : url, author : author});
-            newImage.save()
-                .then(image => res.json({
-                    code: 200,
-                    fileName,
-                    originalName: req.file.originalname,
-                    url : url,
-                    author : author
-                }))
-                .catch(err => res.status(500).send(err));
-        });
-
-        stream.end(req.file.buffer);
+            res.status(200).json({
+                code:200,
+                message: 'Image uploaded successfully',
+                image: newImage
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Error uploading image');
+        }
     });
 
     // Get images
-    app.get('/api/gallery',auth,async (req, res) => {
+    app.get('/api/gallery', auth, async (req, res) => {
         try {
             const page = parseInt(req.query.page) || 1;
             const pageSize = parseInt(req.query.pageSize) || 15;
             const temp = await Images.countDocuments({
-                author : req.query.author? req.query.author : {$exists: true}  // Optional: filter by author
+                author: req.query.author ? req.query.author : { $exists: true }  // Optional: filter by author
             })
             Images.find({
-                author : req.query.author? req.query.author : {$exists: true}  // Optional: filter by author
+                author: req.query.author ? req.query.author : { $exists: true }  // Optional: filter by author
             }).skip((page - 1) * pageSize).limit(pageSize).then(async image => {
                 const totalPages = Math.ceil(temp / pageSize);
                 res.json({
@@ -93,12 +87,12 @@ module.exports = function (app) {
                 throw err;
             })
         } catch (error) {
-            
+
         }
     })
 
     //Delete Images
-    app.delete('/api/gallery/:id',auth,async (req, res) => {
+    app.delete('/api/gallery/:id', auth, async (req, res) => {
         const { id } = req.params;
         try {
             const image = await Images.findById(id);
@@ -110,7 +104,7 @@ module.exports = function (app) {
             await file.delete();
 
             await Images.findByIdAndDelete(id);
-            res.status(200).json({ message: 'Image deleted successfully' ,code:'200'});
+            res.status(200).json({ message: 'Image deleted successfully', code: '200' });
         } catch (error) {
             console.error('Error deleting image:', error);
             res.status(500).json({ message: 'Internal Server Error' });
