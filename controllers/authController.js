@@ -4,7 +4,7 @@ const User = require('../api/models/userModel')
 const auth = require('../api/middlewares/auth');
 const admin = require('firebase-admin')
 const multer = require('multer');
-var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-2852632729.json')
+var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-c6a0155f93.json')
 
 module.exports = function (app) {
 
