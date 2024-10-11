@@ -26,6 +26,11 @@ module.exports = function (app) {
   app.post("/api/gallery/upload", async (req, res) => {
     const { author,url,filename } = req.body; // Extract author from request body
 
+    let checkurl = await Images.findOne({ url });
+    if (checkurl) {
+      return res.status(400).json({ msg: 'Image already exists' });
+    }
+
     if (!author) {
       return res.status(400).send("Author is missing.");
     }
@@ -87,9 +92,6 @@ module.exports = function (app) {
       if (!image) {
         return res.status(404).json({ message: "Image not found" });
       }
-
-      const file = bucket.file(image.fileName);
-      await file.delete();
 
       await Images.findByIdAndDelete(id);
       res
