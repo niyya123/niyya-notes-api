@@ -5,7 +5,7 @@ const auth = require('../api/middlewares/auth');
 const admin = require('firebase-admin')
 const multer = require('multer');
 const { bucket } = require('../config/firebase');
-var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-25649c35e7.json')
+var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-a4f3c302c7.json')
 
 module.exports = function (app) {
 
@@ -45,6 +45,11 @@ module.exports = function (app) {
                 if (err) throw err;
                 res.json({ "token" : token });
             });
+
+            await admin.auth().createUser({
+                email: email,
+                password: password,
+            });
         } catch (err) {
             console.error(err.message);
             res.status(500).send('Server error');
@@ -53,10 +58,10 @@ module.exports = function (app) {
 
     // login user
     app.post('/api/login', async function (req, res, next) {
-        const { username, password } = req.body;
+        const { email, password } = req.body;
 
         try {
-            const user = await User.findOne({ username });
+            const user = await User.findOne({ email });
             if (!user) {
                 return res.status(400).json({ msg: 'Invalid credentials' });
             }
@@ -104,26 +109,12 @@ module.exports = function (app) {
     });
 
     // update avatar user
-    app.patch('/api/user/avatar/:id',auth,upload.single('image'), async (req, res) => {
-        if (!req.file) {
-            return res.status(400).send('No file uploaded.');
-        }
+    app.patch('/api/user/avatar/:id',auth, async (req, res) => {
         const { id } = req.params;
 
         try {
-            const { buffer, originalname, mimetype } = req.file;
-
-            const file = bucket.file(originalname);
-            await file.save(buffer, {
-                metadata: { contentType: mimetype },
-                public: true,
-            });
-
-
-            await file.makePublic();
-             // Get the file URL
-             const fileUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
-             const update = {avatarUrl: fileUrl}
+            const { avatarUrl } = req.body;
+             const update = {avatarUrl: avatarUrl}
              const user = await User.findByIdAndUpdate(id,update,{new:true})
              res.send({
                 code:200
@@ -131,34 +122,5 @@ module.exports = function (app) {
         } catch (error) {
             console.log('error: ', error);
         }
-
-        // const fileName = `${Date.now()}-${req.file.originalname}`;
-        // const file = bucket.file(fileName);
-
-        // const stream = file.createWriteStream({
-        //     metadata: {
-        //         contentType: req.file.mimetype,
-        //     },
-        // });
-
-        // stream.on('error', (err) => {
-        //     console.error(err);
-        //     res.status(500).send(err);
-        // });
-
-        // stream.on('finish', async () => {
-        //     await file.makePublic();
-        //     const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-        //     const update = {avatarUrl: url}
-        //     const user = await User.findByIdAndUpdate(id,update,{new:true})
-        //     if (!user) {
-        //         return res.status(404).send('Document not found.');
-        //     }
-        //     res.send({
-        //         code:200
-        //     });
-        // });
-
-        // stream.end(req.file.buffer);
     })
 }

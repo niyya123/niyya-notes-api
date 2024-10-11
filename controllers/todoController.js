@@ -55,7 +55,7 @@ module.exports = function (app) {
         console.log(req.body)
 
         Todos.find(query).skip((page - 1) * pageSize).limit(pageSize).then(async todo => {
-            const totalItems = await Todos.countDocuments();
+            const totalItems = await todo.length;
             const totalPages = Math.ceil(totalItems / pageSize);
             res.json({
                 "page": page,
