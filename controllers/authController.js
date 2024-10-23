@@ -46,7 +46,7 @@ module.exports = function (app) {
                 res.json({ "token" : token });
             });
 
-            await admin.auth().createUserWithEmailAndPassword({
+            await admin.auth().createUser({
                 email: email,
                 password: password,
             });
