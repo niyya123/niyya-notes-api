@@ -1,13 +1,12 @@
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-var configFBPath = process.env.PORT || ''
-var key = require(`${configFBPath}`)
+import {niyyaFBKey} from './env'
 
 // Initialize Firebase Admin SDK
 try {
     admin.initializeApp({
-        credential: admin.credential.cert(key),
+        credential: admin.credential.cert(niyyaFBKey),
         storageBucket: "niyya-notes.appspot.com" // Replace with your Firebase project's storage bucket
     });
     console.log('Firebase Admin SDK initialized successfully');
