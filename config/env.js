@@ -1,0 +1,1 @@
+export const keyFilePath = process.env.CERTIFICATE_KEY_PATH;

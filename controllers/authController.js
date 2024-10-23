@@ -5,7 +5,9 @@ const auth = require('../api/middlewares/auth');
 const admin = require('firebase-admin')
 const multer = require('multer');
 const { bucket } = require('../config/firebase');
-var key = require('../config/niyya-notes-firebase-adminsdk-fggb6-a4f3c302c7.json')
+
+var configFBPath = process.env.PORT || ''
+var key = require(`${configFBPath}`)
 
 module.exports = function (app) {
 
