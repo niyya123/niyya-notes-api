@@ -6,8 +6,6 @@ const admin = require('firebase-admin')
 const multer = require('multer');
 const { bucket } = require('../config/firebase');
 
-var configFBPath = process.env.CERTIFICATE_KEY_PATH || ''
-var key = require(`${configFBPath}`)
 
 module.exports = function (app) {
 
